@@ -1,13 +1,24 @@
 import { createNavigationContainerRef } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { NavigatorScreenParams } from '@react-navigation/native';
 
+// 底部标签：记录库 / 每日 / 设置
+export type TabParamList = {
+  Library: undefined;
+  Timeline: undefined;
+  Settings: undefined;
+};
+
+// 根栈：标签容器 + 浮层/详情页
 export type RootStackParamList = {
-  Home: undefined;
-  // 带 id = 编辑已有的卡；带 date（某天 0 点的 ms）= 补记那一天
-  AddCard: { id?: number; date?: number } | undefined;
+  Main: NavigatorScreenParams<TabParamList> | undefined;
+  AddCard: { id?: number; date?: number } | undefined; // 带 id=编辑；带 date=补记
   CardDetail: { id: number };
   Review: undefined; // 从推送点进来，现场选一张卡
-  Timeline: undefined; // 按天回看记录节奏
 };
+
+// 各屏统一用这个类型取 navigation，跨导航器跳转也能正确解析。
+export type RootNav = NativeStackNavigationProp<RootStackParamList>;
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 

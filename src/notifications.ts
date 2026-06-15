@@ -85,6 +85,21 @@ export async function topUpRandom(count = 3): Promise<void> {
   }
 }
 
+// 关闭随机推送：取消所有已排的随机通知（每日定点不受影响）。
+export async function clearRandom(): Promise<void> {
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  await Promise.all(
+    scheduled
+      .filter((n) => (n.content.data as any)?.tag === RANDOM_TAG)
+      .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier))
+  );
+}
+
+// 关闭每日定点推送。
+export async function clearDaily(): Promise<void> {
+  await Notifications.cancelScheduledNotificationAsync(DAILY_ID_KEY).catch(() => {});
+}
+
 // 把触发时刻挪到当天 9:00~22:00 这个白天区间，避免半夜弹。
 function clampToDaytime(seconds: number): number {
   const fireAt = new Date(Date.now() + seconds * 1000);

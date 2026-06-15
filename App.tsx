@@ -1,48 +1,221 @@
-import React, { useEffect, useRef } from 'react';
-import { Text, TouchableOpacity } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+  Theme,
+} from '@react-navigation/native';
+import {
+  createNativeStackNavigator,
+  NativeStackNavigationOptions,
+} from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 
-import { navigationRef, navigate, RootStackParamList } from './src/navigation';
+import {
+  navigationRef,
+  navigate,
+  RootStackParamList,
+  TabParamList,
+} from './src/navigation';
 import { initDb } from './src/db';
-import { ensurePermissions, scheduleDaily, topUpRandom } from './src/notifications';
+import { ensurePermissions } from './src/notifications';
+import { applyNotificationPrefs } from './src/settings';
+import { useColors, Palette } from './src/theme';
+import { haptic } from './src/haptics';
 
 import HomeScreen from './src/screens/HomeScreen';
 import AddCardScreen from './src/screens/AddCardScreen';
 import CardDetailScreen from './src/screens/CardDetailScreen';
 import ReviewScreen from './src/screens/ReviewScreen';
 import TimelineScreen from './src/screens/TimelineScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+// 各栈共用的普通（小标题）头。不透明、与屏幕同底色——小标题在任何嵌套结构下都稳定渲染。
+function headerOptions(c: Palette): NativeStackNavigationOptions {
+  return {
+    headerShadowVisible: false,
+    headerStyle: { backgroundColor: c.background },
+    headerTitleStyle: { color: c.label },
+    headerTintColor: c.accent,
+    contentStyle: { backgroundColor: c.background },
+  };
+}
 
-const screenOptions = {
-  headerStyle: { backgroundColor: '#faf8f4' },
-  headerShadowVisible: false,
-  headerTintColor: '#2c2c2c',
-  headerTitleStyle: { fontWeight: '600' as const },
-  contentStyle: { backgroundColor: '#faf8f4' },
-};
+const LibraryStack = createNativeStackNavigator();
+function LibraryStackNav() {
+  const c = useColors();
+  return (
+    <LibraryStack.Navigator screenOptions={headerOptions(c)}>
+      <LibraryStack.Screen
+        name="LibraryHome"
+        component={HomeScreen}
+        options={({ navigation }) => ({
+          title: '记录库',
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() => {
+                haptic.light();
+                navigation.navigate('AddCard');
+              }}
+              hitSlop={10}
+            >
+              <Ionicons name="add" size={28} color={c.accent} />
+            </TouchableOpacity>
+          ),
+        })}
+      />
+    </LibraryStack.Navigator>
+  );
+}
 
-export default function App() {
-  const ready = useRef(false);
+const TimelineStack = createNativeStackNavigator();
+function TimelineStackNav() {
+  const c = useColors();
+  return (
+    <TimelineStack.Navigator screenOptions={headerOptions(c)}>
+      <TimelineStack.Screen
+        name="TimelineMain"
+        component={TimelineScreen}
+        options={{ title: '每日' }}
+      />
+    </TimelineStack.Navigator>
+  );
+}
+
+const SettingsStack = createNativeStackNavigator();
+function SettingsStackNav() {
+  const c = useColors();
+  return (
+    <SettingsStack.Navigator screenOptions={headerOptions(c)}>
+      <SettingsStack.Screen
+        name="SettingsMain"
+        component={SettingsScreen}
+        options={{ title: '设置' }}
+      />
+    </SettingsStack.Navigator>
+  );
+}
+
+const Tab = createBottomTabNavigator<TabParamList>();
+function Tabs() {
+  const c = useColors();
+  const insets = useSafeAreaInsets();
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: c.accent,
+        tabBarInactiveTintColor: c.secondaryLabel,
+        tabBarLabelStyle: { fontSize: 11, marginTop: 2 },
+        // 浮动玻璃胶囊。自己控制高度与内边距，覆盖默认安全区内边距，避免文字被挤出。
+        tabBarStyle: {
+          position: 'absolute',
+          left: 20,
+          right: 20,
+          bottom: insets.bottom > 0 ? insets.bottom : 12,
+          height: 64,
+          paddingTop: 8,
+          paddingBottom: 8,
+          borderRadius: 32,
+          borderTopWidth: 0,
+          backgroundColor: 'transparent',
+          elevation: 0,
+        },
+        // 把圆角裁剪放到背景层，标签文字就不会被胶囊裁掉。
+        tabBarBackground: () => (
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                borderRadius: 32,
+                overflow: 'hidden',
+                borderWidth: StyleSheet.hairlineWidth,
+                borderColor: c.separator,
+              },
+            ]}
+          >
+            <BlurView tint={c.blurTint} intensity={70} style={StyleSheet.absoluteFill} />
+          </View>
+        ),
+        tabBarIcon: ({ color, size, focused }) => {
+          const map = {
+            Library: focused ? 'sparkles' : 'sparkles-outline',
+            Timeline: focused ? 'calendar' : 'calendar-outline',
+            Settings: focused ? 'settings' : 'settings-outline',
+          } as const;
+          return <Ionicons name={map[route.name]} size={size ?? 22} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen
+        name="Library"
+        component={LibraryStackNav}
+        options={{ title: '记录' }}
+        listeners={{ tabPress: () => haptic.selection() }}
+      />
+      <Tab.Screen
+        name="Timeline"
+        component={TimelineStackNav}
+        options={{ title: '每日' }}
+        listeners={{ tabPress: () => haptic.selection() }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsStackNav}
+        options={{ title: '设置' }}
+        listeners={{ tabPress: () => haptic.selection() }}
+      />
+    </Tab.Navigator>
+  );
+}
+
+const RootStack = createNativeStackNavigator<RootStackParamList>();
+function RootNavigator() {
+  const c = useColors();
+  return (
+    <RootStack.Navigator screenOptions={headerOptions(c)}>
+      <RootStack.Screen name="Main" component={Tabs} options={{ headerShown: false }} />
+      <RootStack.Screen
+        name="AddCard"
+        component={AddCardScreen}
+        options={{ presentation: 'modal', title: '记一笔' }}
+      />
+      <RootStack.Screen
+        name="CardDetail"
+        component={CardDetailScreen}
+        options={{ title: '' }}
+      />
+      <RootStack.Screen
+        name="Review"
+        component={ReviewScreen}
+        options={{ presentation: 'modal', title: '回味' }}
+      />
+    </RootStack.Navigator>
+  );
+}
+
+function AppInner() {
+  const c = useColors();
 
   useEffect(() => {
     (async () => {
       await initDb();
       const granted = await ensurePermissions();
-      if (granted) {
-        await scheduleDaily(21, 0); // 默认晚 9 点；以后可做成可设置
-        await topUpRandom(3);
-      }
-      ready.current = true;
+      if (granted) await applyNotificationPrefs();
     })();
 
-    // 冷启动：如果是点推送进来的，进入回味页。
+    // 冷启动：点推送进来 → 进回味页。
     Notifications.getLastNotificationResponseAsync().then((resp) => {
       if (resp?.notification.request.content.data?.kind === 'review') {
-        // 等导航就绪后再跳。
         const t = setInterval(() => {
           if (navigationRef.isReady()) {
             clearInterval(t);
@@ -52,7 +225,7 @@ export default function App() {
       }
     });
 
-    // 运行中点推送：直接跳回味页。
+    // 运行中点推送 → 进回味页。
     const sub = Notifications.addNotificationResponseReceivedListener((resp) => {
       if (resp.notification.request.content.data?.kind === 'review') {
         navigate('Review');
@@ -61,39 +234,31 @@ export default function App() {
     return () => sub.remove();
   }, []);
 
+  const base = c.scheme === 'dark' ? DarkTheme : DefaultTheme;
+  const navTheme: Theme = {
+    ...base,
+    colors: {
+      ...base.colors,
+      background: c.background,
+      card: c.card,
+      text: c.label,
+      border: c.separator,
+      primary: c.accent,
+    },
+  };
+
   return (
-    <NavigationContainer ref={navigationRef}>
-      <StatusBar style="dark" />
-      <Stack.Navigator screenOptions={screenOptions}>
-        <Stack.Screen
-          name="Home"
-          component={HomeScreen}
-          options={({ navigation }) => ({
-            title: '拾光',
-            headerRight: () => (
-              <TouchableOpacity onPress={() => navigation.navigate('Timeline')}>
-                <Text style={{ fontSize: 15, color: '#c8a45c' }}>每日</Text>
-              </TouchableOpacity>
-            ),
-          })}
-        />
-        <Stack.Screen
-          name="AddCard"
-          component={AddCardScreen}
-          options={{ title: '记一笔', presentation: 'modal' }}
-        />
-        <Stack.Screen
-          name="CardDetail"
-          component={CardDetailScreen}
-          options={{ title: '' }}
-        />
-        <Stack.Screen name="Review" component={ReviewScreen} options={{ title: '回味' }} />
-        <Stack.Screen
-          name="Timeline"
-          component={TimelineScreen}
-          options={{ title: '每日' }}
-        />
-      </Stack.Navigator>
+    <NavigationContainer ref={navigationRef} theme={navTheme}>
+      <StatusBar style={c.scheme === 'dark' ? 'light' : 'dark'} />
+      <RootNavigator />
     </NavigationContainer>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AppInner />
+    </SafeAreaProvider>
   );
 }

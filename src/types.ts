@@ -11,6 +11,7 @@ export interface Card {
   // —— 内化算法用 ——
   updatedAt: number | null; // 最近一次编辑时间；从未编辑则为 null
 
+  important: number; // 0/1，手动标记「重要」后被推送的权重更高
   maturity: number; // 成熟度 0..N，越高代表越内化，被推送的几率越低
   reviewCount: number; // 被回味过几次
   lastShownAt: number | null; // 上次出现时间

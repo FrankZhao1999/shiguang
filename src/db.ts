@@ -31,6 +31,7 @@ export async function initDb(): Promise<void> {
       imageUri TEXT,
       createdAt INTEGER NOT NULL,
       updatedAt INTEGER,
+      important INTEGER NOT NULL DEFAULT 0,
       maturity INTEGER NOT NULL DEFAULT 0,
       reviewCount INTEGER NOT NULL DEFAULT 0,
       lastShownAt INTEGER,
@@ -46,9 +47,36 @@ export async function initDb(): Promise<void> {
       tag TEXT,
       editedAt INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
   `);
-  // 平滑迁移：老库可能没有 updatedAt 列，缺了就补上（已存在会抛错，忽略即可）。
+  // 平滑迁移：老库可能缺这些列，缺了就补上（已存在会抛错，忽略即可）。
   await db.execAsync('ALTER TABLE cards ADD COLUMN updatedAt INTEGER').catch(() => {});
+  await db
+    .execAsync('ALTER TABLE cards ADD COLUMN important INTEGER NOT NULL DEFAULT 0')
+    .catch(() => {});
+}
+
+// —— 偏好设置（键值对，存在本地）——
+export async function getSetting(key: string): Promise<string | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM settings WHERE key = ?',
+    key
+  );
+  return row ? row.value : null;
+}
+
+export async function setSetting(key: string, value: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?',
+    key,
+    value,
+    value
+  );
 }
 
 export async function addCard(
@@ -127,9 +155,20 @@ export async function getEdits(cardId: number): Promise<CardEdit[]> {
   );
 }
 
-// 按成熟度加权随机挑一张：成熟度越低（越新、越没内化）权重越高。
+// 标记/取消「重要」。重要的卡在回味推送里权重更高。
+export async function setImportant(id: number, important: boolean): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('UPDATE cards SET important = ? WHERE id = ?', important ? 1 : 0, id);
+}
+
+const IMPORTANT_BOOST = 4; // 标了「重要」的卡，被选中的权重放大 4 倍
+
+// 按成熟度加权随机挑一张：成熟度越低（越新、越没内化）权重越高；
+// 标了「重要」的再额外加权，让你更在意的感悟更常回到眼前。
 function weightedPick(pool: Card[]): Card {
-  const weights = pool.map((c) => 1 / (c.maturity + 1));
+  const weights = pool.map(
+    (c) => (1 / (c.maturity + 1)) * (c.important ? IMPORTANT_BOOST : 1)
+  );
   const total = weights.reduce((a, b) => a + b, 0);
   let r = Math.random() * total;
   for (let i = 0; i < pool.length; i++) {
