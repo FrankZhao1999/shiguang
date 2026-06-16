@@ -15,11 +15,12 @@ import DateTimePicker, {
 import { getDailyTime, setDailyTime, getRandomEnabled, setRandomEnabled } from '../settings';
 import { ensurePermissions } from '../notifications';
 import { exportAsText, exportAsBackupFile } from '../export';
-import { useColors, spacing, radius, TAB_BAR_INSET } from '../theme';
+import { useColors, spacing, radius, useTabBarSpace } from '../theme';
 import { haptic } from '../haptics';
 
 export default function SettingsScreen() {
   const c = useColors();
+  const tabSpace = useTabBarSpace();
   const [time, setTime] = useState<Date>(new Date());
   const [randomOn, setRandomOn] = useState(true);
   const [showPicker, setShowPicker] = useState(false);
@@ -100,7 +101,7 @@ export default function SettingsScreen() {
     <ScrollView
       style={{ backgroundColor: c.background }}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={{ padding: spacing.lg, paddingBottom: TAB_BAR_INSET }}
+      contentContainerStyle={{ padding: spacing.lg, paddingBottom: tabSpace }}
     >
       <Text style={[styles.section, { color: c.secondaryLabel }]}>推送</Text>
 

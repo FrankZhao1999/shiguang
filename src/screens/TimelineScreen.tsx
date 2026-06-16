@@ -11,7 +11,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { RootNav } from '../navigation';
 import { getAllCards } from '../db';
 import { Card } from '../types';
-import { useColors, spacing, radius, TAB_BAR_INSET, Palette } from '../theme';
+import { useColors, spacing, radius, useTabBarSpace, Palette } from '../theme';
 import { dayKey, dayKeyOf, dayHeader, timeOf } from '../date';
 
 const WEEKS_TO_SHOW = 20;
@@ -135,6 +135,7 @@ function Heatmap({
 export default function TimelineScreen() {
   const navigation = useNavigation<RootNav>();
   const c = useColors();
+  const tabSpace = useTabBarSpace();
   const [cards, setCards] = useState<Card[]>([]);
 
   useFocusEffect(
@@ -173,7 +174,7 @@ export default function TimelineScreen() {
       sections={sections}
       keyExtractor={(item) => String(item.id)}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={[styles.list, { paddingBottom: TAB_BAR_INSET }]}
+      contentContainerStyle={[styles.list, { paddingBottom: tabSpace }]}
       stickySectionHeadersEnabled={false}
       ListHeaderComponent={
         <View>

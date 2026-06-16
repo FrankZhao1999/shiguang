@@ -4,7 +4,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { RootNav } from '../navigation';
 import { getAllCards } from '../db';
 import { Card } from '../types';
-import { useColors, spacing, radius, TAB_BAR_INSET } from '../theme';
+import { useColors, spacing, radius, useTabBarSpace } from '../theme';
 import { shortDate } from '../date';
 import { haptic } from '../haptics';
 import { PressableScale } from '../components/PressableScale';
@@ -12,6 +12,7 @@ import { PressableScale } from '../components/PressableScale';
 export default function HomeScreen() {
   const navigation = useNavigation<RootNav>();
   const c = useColors();
+  const tabSpace = useTabBarSpace();
   const [cards, setCards] = useState<Card[]>([]);
 
   useFocusEffect(
@@ -26,7 +27,7 @@ export default function HomeScreen() {
       data={cards}
       keyExtractor={(item) => String(item.id)}
       contentInsetAdjustmentBehavior="automatic"
-      contentContainerStyle={[styles.list, { paddingBottom: TAB_BAR_INSET }]}
+      contentContainerStyle={[styles.list, { paddingBottom: tabSpace }]}
       ListHeaderComponent={
         <PressableScale
           style={[styles.reviewBtn, { backgroundColor: c.fill }]}

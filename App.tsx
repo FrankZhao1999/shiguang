@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { TouchableOpacity, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import {
   SafeAreaProvider,
@@ -116,35 +116,22 @@ function Tabs() {
         tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.secondaryLabel,
         tabBarLabelStyle: { fontSize: 11, marginTop: 2 },
-        // 浮动玻璃胶囊。自己控制高度与内边距，覆盖默认安全区内边距，避免文字被挤出。
+        // 贴底玻璃栏：铺满屏幕底边到安全区，内容干净地停在它上方，下方不再露东西。
         tabBarStyle: {
           position: 'absolute',
-          left: 20,
-          right: 20,
-          bottom: insets.bottom > 0 ? insets.bottom : 12,
-          height: 64,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 60 + insets.bottom,
           paddingTop: 8,
-          paddingBottom: 8,
-          borderRadius: 32,
-          borderTopWidth: 0,
+          paddingBottom: insets.bottom,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: c.separator,
           backgroundColor: 'transparent',
           elevation: 0,
         },
-        // 把圆角裁剪放到背景层，标签文字就不会被胶囊裁掉。
         tabBarBackground: () => (
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                borderRadius: 32,
-                overflow: 'hidden',
-                borderWidth: StyleSheet.hairlineWidth,
-                borderColor: c.separator,
-              },
-            ]}
-          >
-            <BlurView tint={c.blurTint} intensity={70} style={StyleSheet.absoluteFill} />
-          </View>
+          <BlurView tint={c.blurTint} intensity={70} style={StyleSheet.absoluteFill} />
         ),
         tabBarIcon: ({ color, size, focused }) => {
           const map = {

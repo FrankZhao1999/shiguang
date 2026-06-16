@@ -1,4 +1,5 @@
 import { useColorScheme } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // iOS 风格的语义化色板。以中性色为主，只保留一个低饱和度的金色强调色（呼应「拾光」）。
 // 强调色只用于：激活的标签、链接、重要星标、选中的主题；正文与卡片保持安静。
@@ -66,9 +67,13 @@ export const spacing = {
   xxxl: 32,
 } as const;
 
-// 浮动玻璃标签栏占据的底部空间：tab 屏的滚动内容要留出这么多 paddingBottom，
-// 以免最后一条被标签栏盖住。
-export const TAB_BAR_INSET = 96;
+// 贴底玻璃标签栏的内容内边距：tab 屏的滚动内容留出这么多 paddingBottom，
+// 让最后一条干净地停在标签栏上方。与 App.tsx 里 bar 的高度(60 + 安全区)保持一致。
+export const TAB_BAR_BASE = 60;
+export function useTabBarSpace(): number {
+  const insets = useSafeAreaInsets();
+  return TAB_BAR_BASE + insets.bottom + spacing.md;
+}
 
 // 连续圆角（squircle）半径。配合各处 borderCurve: 'continuous' 使用。
 export const radius = {
