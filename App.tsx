@@ -46,6 +46,7 @@ function headerOptions(c: Palette): NativeStackNavigationOptions {
     headerStyle: { backgroundColor: c.background },
     headerTitleStyle: { color: c.label },
     headerTintColor: c.accent,
+    headerBackTitle: '返回',
     contentStyle: { backgroundColor: c.background },
   };
 }

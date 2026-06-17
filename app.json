@@ -34,7 +34,8 @@
         {
           "photosPermission": "用于从相册选择照片，添加到你的感悟卡片。"
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }

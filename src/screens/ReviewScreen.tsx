@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { RootNav } from '../navigation';
@@ -16,6 +16,17 @@ export default function ReviewScreen() {
   const loadNext = useCallback((excludeId?: number) => {
     selectCardForReview(excludeId).then(setCard);
   }, []);
+
+  // 「回味」是弹出层，始终给一个关闭出口（尤其空状态下没有其它按钮）。
+  useEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={10}>
+          <Text style={{ fontSize: 16, color: c.accent }}>关闭</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, c.accent]);
 
   useFocusEffect(
     useCallback(() => {
