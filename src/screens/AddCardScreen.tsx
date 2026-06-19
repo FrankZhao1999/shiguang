@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,15 +12,20 @@ import {
   Alert,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  ExpoSpeechRecognitionModule,
+  useSpeechRecognitionEvent,
+} from 'expo-speech-recognition';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootNav, RootStackParamList } from '../navigation';
 import { addCard, updateCard, getCard } from '../db';
-import { persistImage } from '../images';
+import { persistImage, getImages } from '../images';
 import { useColors, spacing, radius } from '../theme';
 import { haptic } from '../haptics';
 import { PressableScale } from '../components/PressableScale';
 
-const SUGGESTED_TAGS = ['接纳', '专注', '关系', '感恩', '放下', '勇气'];
+const SUGGESTED_TAGS = ['感悟', '备忘', '行动'];
 
 export default function AddCardScreen() {
   const navigation = useNavigation<RootNav>();
@@ -34,7 +39,53 @@ export default function AddCardScreen() {
 
   const [text, setText] = useState('');
   const [tag, setTag] = useState('');
-  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>([]);
+  const [recording, setRecording] = useState(false);
+  const baseTextRef = useRef(''); // 开始语音前的已有文字，识别结果接在它后面
+
+  // —— 语音识别事件 ——
+  useSpeechRecognitionEvent('result', (event) => {
+    const transcript = event.results?.[0]?.transcript ?? '';
+    const base = baseTextRef.current;
+    setText(base ? `${base} ${transcript}` : transcript);
+  });
+  useSpeechRecognitionEvent('end', () => setRecording(false));
+  useSpeechRecognitionEvent('error', (event) => {
+    setRecording(false);
+    if (event.error !== 'aborted') {
+      Alert.alert('语音识别中断', '请重试，或在系统设置里检查麦克风/语音识别权限。');
+    }
+  });
+
+  // 离开页面时停止识别，避免后台还在录。
+  useEffect(() => {
+    return () => {
+      try {
+        ExpoSpeechRecognitionModule.abort();
+      } catch {}
+    };
+  }, []);
+
+  async function toggleVoice() {
+    if (recording) {
+      ExpoSpeechRecognitionModule.stop();
+      return;
+    }
+    const perm = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert('需要权限', '请在系统「设置」里允许「拾光」使用麦克风与语音识别。');
+      return;
+    }
+    baseTextRef.current = text.trim();
+    setRecording(true);
+    haptic.light();
+    ExpoSpeechRecognitionModule.start({
+      lang: 'zh-CN',
+      interimResults: true,
+      continuous: true,
+      requiresOnDeviceRecognition: true, // 设备端识别，不上云
+    });
+  }
 
   useEffect(() => {
     navigation.setOptions({
@@ -50,7 +101,7 @@ export default function AddCardScreen() {
         if (card) {
           setText(card.text);
           setTag(card.tag ?? '');
-          setImageUri(card.imageUri);
+          setImages(getImages(card));
         }
       });
     }
@@ -59,9 +110,18 @@ export default function AddCardScreen() {
   async function pickImage() {
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: 9,
       quality: 0.6,
     });
-    if (!res.canceled) setImageUri(persistImage(res.assets[0].uri));
+    if (!res.canceled) {
+      const added = res.assets.map((a) => persistImage(a.uri));
+      setImages((prev) => [...prev, ...added]);
+    }
+  }
+
+  function removeImage(uri: string) {
+    setImages((prev) => prev.filter((u) => u !== uri));
   }
 
   async function save() {
@@ -70,13 +130,13 @@ export default function AddCardScreen() {
       return;
     }
     if (isEdit) {
-      await updateCard(editId!, text.trim(), tag.trim() || null, imageUri);
+      await updateCard(editId!, text.trim(), tag.trim() || null, images);
     } else if (isBackfill) {
       const d = new Date(backfillDate!);
       d.setHours(12, 0, 0, 0);
-      await addCard(text.trim(), tag.trim() || null, imageUri, d.getTime());
+      await addCard(text.trim(), tag.trim() || null, images, d.getTime());
     } else {
-      await addCard(text.trim(), tag.trim() || null, imageUri);
+      await addCard(text.trim(), tag.trim() || null, images);
     }
     haptic.success();
     navigation.goBack();
@@ -113,6 +173,29 @@ export default function AddCardScreen() {
           onChangeText={setText}
         />
 
+        <TouchableOpacity
+          style={[
+            styles.voiceBtn,
+            { borderColor: recording ? '#FF453A' : c.separator, backgroundColor: c.card },
+          ]}
+          onPress={toggleVoice}
+        >
+          <Ionicons
+            name={recording ? 'stop-circle' : 'mic-outline'}
+            size={18}
+            color={recording ? '#FF453A' : c.accent}
+          />
+          <Text
+            style={{
+              color: recording ? '#FF453A' : c.secondaryLabel,
+              fontSize: 14,
+              marginLeft: 6,
+            }}
+          >
+            {recording ? '正在听… 点此停止' : '语音输入'}
+          </Text>
+        </TouchableOpacity>
+
         <Text style={[styles.label, { color: c.secondaryLabel }]}>主题（可选）</Text>
         <View style={styles.tagRow}>
           {SUGGESTED_TAGS.map((t) => {
@@ -147,19 +230,27 @@ export default function AddCardScreen() {
           onChangeText={setTag}
         />
 
-        <Text style={[styles.label, { color: c.secondaryLabel }]}>配图（可选）</Text>
-        {imageUri ? (
-          <TouchableOpacity onPress={pickImage}>
-            <Image source={{ uri: imageUri }} style={styles.preview} />
-          </TouchableOpacity>
-        ) : (
+        <Text style={[styles.label, { color: c.secondaryLabel }]}>配图（可选，可多张）</Text>
+        <View style={styles.imageRow}>
+          {images.map((uri) => (
+            <View key={uri} style={styles.thumbWrap}>
+              <Image source={{ uri }} style={styles.thumb} />
+              <TouchableOpacity
+                style={[styles.removeBtn, { backgroundColor: c.fill }]}
+                onPress={() => removeImage(uri)}
+                hitSlop={8}
+              >
+                <Text style={{ color: c.onFill, fontSize: 13, lineHeight: 15 }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
           <TouchableOpacity
-            style={[styles.imageBtn, { borderColor: c.separator }]}
+            style={[styles.addTile, { borderColor: c.separator }]}
             onPress={pickImage}
           >
-            <Text style={{ color: c.tertiaryLabel, fontSize: 15 }}>＋ 添加一张图</Text>
+            <Text style={{ color: c.tertiaryLabel, fontSize: 28 }}>＋</Text>
           </TouchableOpacity>
-        )}
+        </View>
 
         <PressableScale style={[styles.saveBtn, { backgroundColor: c.fill }]} onPress={save}>
           <Text style={[styles.saveBtnText, { color: c.onFill }]}>
@@ -190,6 +281,17 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     textAlignVertical: 'top',
   },
+  voiceBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 20,
+    borderCurve: 'continuous',
+    borderWidth: 1,
+    marginTop: spacing.md,
+  },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   tagChip: {
     paddingHorizontal: spacing.md,
@@ -205,15 +307,29 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     fontSize: 15,
   },
-  imageBtn: {
+  imageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  thumbWrap: { position: 'relative' },
+  thumb: { width: 84, height: 84, borderRadius: radius.small, borderCurve: 'continuous' },
+  removeBtn: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addTile: {
+    width: 84,
+    height: 84,
     borderRadius: radius.small,
     borderCurve: 'continuous',
-    padding: spacing.lg,
-    alignItems: 'center',
     borderWidth: 1,
     borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  preview: { width: '100%', height: 200, borderRadius: radius.card, borderCurve: 'continuous' },
   saveBtn: {
     borderRadius: radius.button,
     borderCurve: 'continuous',

@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, Image } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { RootNav } from '../navigation';
 import { getAllCards } from '../db';
+import { getImages } from '../images';
 import { Card } from '../types';
 import { useColors, spacing, radius, useTabBarSpace } from '../theme';
 import { shortDate } from '../date';
@@ -36,7 +37,7 @@ export default function HomeScreen() {
             navigation.navigate('Review');
           }}
         >
-          <Text style={[styles.reviewBtnText, { color: c.onFill }]}>回味一张 ✨</Text>
+          <Text style={[styles.reviewBtnText, { color: c.onFill }]}>拾起一条</Text>
         </PressableScale>
       }
       ListEmptyComponent={
@@ -44,7 +45,9 @@ export default function HomeScreen() {
           还没有记录。{'\n'}下次有顿悟、有小确幸的瞬间，{'\n'}点右上角记下来吧。
         </Text>
       }
-      renderItem={({ item }) => (
+      renderItem={({ item }) => {
+        const images = getImages(item);
+        return (
         <PressableScale
           style={[styles.card, { backgroundColor: c.card }]}
           onPress={() => navigation.navigate('CardDetail', { id: item.id })}
@@ -65,11 +68,19 @@ export default function HomeScreen() {
           <Text style={[styles.cardText, { color: c.label }]} numberOfLines={3}>
             {item.text}
           </Text>
-          {item.imageUri ? (
-            <Image source={{ uri: item.imageUri }} style={styles.thumb} />
+          {images.length > 0 ? (
+            <View style={styles.thumbWrap}>
+              <Image source={{ uri: images[0] }} style={styles.thumb} />
+              {images.length > 1 ? (
+                <View style={styles.countBadge}>
+                  <Text style={styles.countText}>+{images.length - 1}</Text>
+                </View>
+              ) : null}
+            </View>
           ) : null}
         </PressableScale>
-      )}
+        );
+      }}
     />
   );
 }
@@ -107,11 +118,21 @@ const styles = StyleSheet.create({
   },
   date: { fontSize: 12 },
   cardText: { fontSize: 16, lineHeight: 24 },
+  thumbWrap: { position: 'relative', marginTop: spacing.md },
   thumb: {
     width: '100%',
     height: 140,
     borderRadius: radius.small,
     borderCurve: 'continuous',
-    marginTop: spacing.md,
   },
+  countBadge: {
+    position: 'absolute',
+    right: spacing.sm,
+    bottom: spacing.sm,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 10,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  countText: { color: '#fff', fontSize: 12, fontWeight: '600' },
 });

@@ -16,7 +16,7 @@ import {
 } from '@react-navigation/native';
 import { RootNav, RootStackParamList } from '../navigation';
 import { getCard, deleteCard, getEdits, setImportant } from '../db';
-import { deleteImage } from '../images';
+import { deleteImage, getImages } from '../images';
 import { Card, CardEdit } from '../types';
 import { useColors, spacing, radius } from '../theme';
 import { haptic } from '../haptics';
@@ -61,7 +61,7 @@ export default function CardDetailScreen() {
         style: 'destructive',
         onPress: async () => {
           haptic.warning();
-          deleteImage(card?.imageUri ?? null);
+          if (card) getImages(card).forEach((u) => deleteImage(u)); // 删掉所有配图文件
           await deleteCard(id);
           navigation.goBack();
         },
@@ -91,9 +91,9 @@ export default function CardDetailScreen() {
         </Text>
       ) : null}
       <Text style={[styles.text, { color: c.label }]}>{card.text}</Text>
-      {card.imageUri ? (
-        <Image source={{ uri: card.imageUri }} style={styles.image} />
-      ) : null}
+      {getImages(card).map((uri, i) => (
+        <Image key={uri + i} source={{ uri }} style={styles.image} />
+      ))}
 
       <TouchableOpacity
         style={[styles.starBtn, { borderColor: c.separator, backgroundColor: c.card }]}

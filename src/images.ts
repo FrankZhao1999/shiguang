@@ -1,5 +1,21 @@
 import { File, Directory, Paths } from 'expo-file-system';
 
+// 取一张卡的所有配图：优先读多图字段 imageUris，回退到旧的单图 imageUri。
+export function getImages(card: {
+  imageUris: string | null;
+  imageUri: string | null;
+}): string[] {
+  if (card.imageUris) {
+    try {
+      const arr = JSON.parse(card.imageUris);
+      if (Array.isArray(arr)) return arr;
+    } catch {
+      // 解析失败则忽略，往下回退
+    }
+  }
+  return card.imageUri ? [card.imageUri] : [];
+}
+
 // 把选中的图片复制一份到 app 自己的文档目录（不会被系统清理），返回新路径。
 // 这样即使系统清掉了相册缓存里的原图，卡片配图也不会变裂图。
 export function persistImage(srcUri: string): string {

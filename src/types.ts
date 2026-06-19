@@ -4,8 +4,9 @@
 export interface Card {
   id: number;
   text: string; // 你的原话，保住当时最真实的味道
-  tag: string | null; // 主题标签，如「接纳」「专注」「关系」
-  imageUri: string | null; // 配图（可选）
+  tag: string | null; // 主题标签，如「感悟」「备忘」「行动」
+  imageUri: string | null; // 旧版单图字段（保留以兼容老数据）
+  imageUris: string | null; // 多图：JSON 字符串数组；新数据写这里
   createdAt: number; // 记录时间，epoch 毫秒
 
   // —— 内化算法用 ——

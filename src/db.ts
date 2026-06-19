@@ -29,6 +29,7 @@ export async function initDb(): Promise<void> {
       text TEXT NOT NULL,
       tag TEXT,
       imageUri TEXT,
+      imageUris TEXT,
       createdAt INTEGER NOT NULL,
       updatedAt INTEGER,
       important INTEGER NOT NULL DEFAULT 0,
@@ -57,6 +58,7 @@ export async function initDb(): Promise<void> {
   await db
     .execAsync('ALTER TABLE cards ADD COLUMN important INTEGER NOT NULL DEFAULT 0')
     .catch(() => {});
+  await db.execAsync('ALTER TABLE cards ADD COLUMN imageUris TEXT').catch(() => {});
 }
 
 // —— 偏好设置（键值对，存在本地）——
@@ -82,17 +84,17 @@ export async function setSetting(key: string, value: string): Promise<void> {
 export async function addCard(
   text: string,
   tag: string | null,
-  imageUri: string | null,
+  images: string[], // 0~多张配图
   createdAt?: number // 补记过去某天时传入；不传则用当前时间
 ): Promise<void> {
   const db = await getDb();
   const now = Date.now();
   await db.runAsync(
-    `INSERT INTO cards (text, tag, imageUri, createdAt, nextEligibleAt)
+    `INSERT INTO cards (text, tag, imageUris, createdAt, nextEligibleAt)
      VALUES (?, ?, ?, ?, ?)`,
     text,
     tag,
-    imageUri,
+    images.length ? JSON.stringify(images) : null,
     createdAt ?? now,
     now // 不论记于哪天，从现在起就有资格被推送回味
   );
@@ -120,7 +122,7 @@ export async function updateCard(
   id: number,
   text: string,
   tag: string | null,
-  imageUri: string | null
+  images: string[]
 ): Promise<void> {
   const db = await getDb();
   const card = await getCard(id);
@@ -137,10 +139,10 @@ export async function updateCard(
     );
   }
   await db.runAsync(
-    'UPDATE cards SET text = ?, tag = ?, imageUri = ?, updatedAt = ? WHERE id = ?',
+    'UPDATE cards SET text = ?, tag = ?, imageUris = ?, updatedAt = ? WHERE id = ?',
     text,
     tag,
-    imageUri,
+    images.length ? JSON.stringify(images) : null,
     now,
     id
   );

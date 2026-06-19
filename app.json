@@ -35,7 +35,14 @@
           "photosPermission": "用于从相册选择照片，添加到你的感悟卡片。"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "用于录下你的语音并转成文字记录。",
+          "speechRecognitionPermission": "用于在设备本地把语音识别成文字。"
+        }
+      ]
     ]
   }
 }
