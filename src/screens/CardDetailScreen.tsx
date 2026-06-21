@@ -16,7 +16,7 @@ import {
 } from '@react-navigation/native';
 import { RootNav, RootStackParamList } from '../navigation';
 import { getCard, deleteCard, getEdits, setImportant } from '../db';
-import { deleteImage, getImages } from '../images';
+import { deleteImage, getImages, resolveImage } from '../images';
 import { Card, CardEdit } from '../types';
 import { useColors, spacing, radius } from '../theme';
 import { haptic } from '../haptics';
@@ -91,8 +91,8 @@ export default function CardDetailScreen() {
         </Text>
       ) : null}
       <Text style={[styles.text, { color: c.label }]}>{card.text}</Text>
-      {getImages(card).map((uri, i) => (
-        <Image key={uri + i} source={{ uri }} style={styles.image} />
+      {getImages(card).map((name, i) => (
+        <Image key={name + i} source={{ uri: resolveImage(name) }} style={styles.image} />
       ))}
 
       <TouchableOpacity

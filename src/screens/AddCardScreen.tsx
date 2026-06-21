@@ -20,7 +20,7 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootNav, RootStackParamList } from '../navigation';
 import { addCard, updateCard, getCard } from '../db';
-import { persistImage, getImages } from '../images';
+import { persistImage, getImages, resolveImage } from '../images';
 import { useColors, spacing, radius } from '../theme';
 import { haptic } from '../haptics';
 import { PressableScale } from '../components/PressableScale';
@@ -232,12 +232,12 @@ export default function AddCardScreen() {
 
         <Text style={[styles.label, { color: c.secondaryLabel }]}>配图（可选，可多张）</Text>
         <View style={styles.imageRow}>
-          {images.map((uri) => (
-            <View key={uri} style={styles.thumbWrap}>
-              <Image source={{ uri }} style={styles.thumb} />
+          {images.map((name) => (
+            <View key={name} style={styles.thumbWrap}>
+              <Image source={{ uri: resolveImage(name) }} style={styles.thumb} />
               <TouchableOpacity
                 style={[styles.removeBtn, { backgroundColor: c.fill }]}
-                onPress={() => removeImage(uri)}
+                onPress={() => removeImage(name)}
                 hitSlop={8}
               >
                 <Text style={{ color: c.onFill, fontSize: 13, lineHeight: 15 }}>✕</Text>

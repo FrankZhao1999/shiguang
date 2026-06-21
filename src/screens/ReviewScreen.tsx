@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'rea
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { RootNav } from '../navigation';
 import { selectCardForReview, markReviewed, markInternalized } from '../db';
-import { getImages } from '../images';
+import { getImages, resolveImage } from '../images';
 import { Card } from '../types';
 import { useColors, spacing, radius } from '../theme';
 import { haptic } from '../haptics';
@@ -71,8 +71,8 @@ export default function ReviewScreen() {
           </Text>
         ) : null}
         <Text style={[styles.text, { color: c.label }]}>{card.text}</Text>
-        {getImages(card).map((uri, i) => (
-          <Image key={uri + i} source={{ uri }} style={styles.image} />
+        {getImages(card).map((name, i) => (
+          <Image key={name + i} source={{ uri: resolveImage(name) }} style={styles.image} />
         ))}
       </ScrollView>
 

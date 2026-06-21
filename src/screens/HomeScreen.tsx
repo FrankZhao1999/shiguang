@@ -3,7 +3,7 @@ import { View, Text, FlatList, StyleSheet, Image } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { RootNav } from '../navigation';
 import { getAllCards, addSeedCards } from '../db';
-import { getImages } from '../images';
+import { getImages, resolveImage } from '../images';
 import { Card } from '../types';
 import { SEEDS } from '../seeds';
 import { useColors, spacing, radius, useTabBarSpace } from '../theme';
@@ -97,7 +97,7 @@ export default function HomeScreen() {
           </Text>
           {images.length > 0 ? (
             <View style={styles.thumbWrap}>
-              <Image source={{ uri: images[0] }} style={styles.thumb} />
+              <Image source={{ uri: resolveImage(images[0]) }} style={styles.thumb} />
               {images.length > 1 ? (
                 <View style={styles.countBadge}>
                   <Text style={styles.countText}>+{images.length - 1}</Text>
