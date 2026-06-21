@@ -3,6 +3,7 @@
     "name": "拾光",
     "slug": "lucid-app",
     "version": "1.0.0",
+    "scheme": "lucid",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -11,7 +12,9 @@
       "bundleIdentifier": "com.frankzhao.shiguang",
       "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSSpeechRecognitionUsageDescription": "用于在设备本地把语音识别成文字。",
+        "NSMicrophoneUsageDescription": "用于录下你的语音并转成文字记录。"
       }
     },
     "android": {
@@ -21,7 +24,10 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -43,6 +49,12 @@
           "speechRecognitionPermission": "用于在设备本地把语音识别成文字。"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "37200a60-07b0-4f74-bfb1-8bd88793d111"
+      }
+    },
+    "owner": "zyq1999"
   }
 }
