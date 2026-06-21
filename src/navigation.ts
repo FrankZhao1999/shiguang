@@ -15,6 +15,7 @@ export type RootStackParamList = {
   AddCard: { id?: number; date?: number } | undefined; // 带 id=编辑；带 date=补记
   CardDetail: { id: number };
   Review: undefined; // 从推送点进来，现场选一张卡
+  SeedLibrary: undefined; // 灵感库：浏览普适道理示例，单条加入
 };
 
 // 各屏统一用这个类型取 navigation，跨导航器跳转也能正确解析。

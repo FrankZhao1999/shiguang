@@ -2,9 +2,10 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Image } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { RootNav } from '../navigation';
-import { getAllCards } from '../db';
+import { getAllCards, addSeedCards } from '../db';
 import { getImages } from '../images';
 import { Card } from '../types';
+import { SEEDS } from '../seeds';
 import { useColors, spacing, radius, useTabBarSpace } from '../theme';
 import { shortDate } from '../date';
 import { haptic } from '../haptics';
@@ -15,12 +16,25 @@ export default function HomeScreen() {
   const c = useColors();
   const tabSpace = useTabBarSpace();
   const [cards, setCards] = useState<Card[]>([]);
+  const [seeding, setSeeding] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      getAllCards().then(setCards);
-    }, [])
-  );
+  const load = useCallback(() => {
+    getAllCards().then(setCards);
+  }, []);
+
+  useFocusEffect(load);
+
+  const addExamples = useCallback(async () => {
+    if (seeding) return;
+    setSeeding(true);
+    haptic.light();
+    try {
+      await addSeedCards(SEEDS);
+      load();
+    } finally {
+      setSeeding(false);
+    }
+  }, [seeding, load]);
 
   return (
     <FlatList
@@ -41,9 +55,22 @@ export default function HomeScreen() {
         </PressableScale>
       }
       ListEmptyComponent={
-        <Text style={[styles.empty, { color: c.tertiaryLabel }]}>
-          还没有记录。{'\n'}下次有顿悟、有小确幸的瞬间，{'\n'}点右上角记下来吧。
-        </Text>
+        <View style={styles.emptyWrap}>
+          <Text style={[styles.empty, { color: c.tertiaryLabel }]}>
+            还没有记录。{'\n'}下次有顿悟、有小确幸的瞬间，{'\n'}点右上角记下来吧。
+          </Text>
+          <Text style={[styles.emptyHint, { color: c.tertiaryLabel }]}>
+            不知从何写起？先放几条示例进来找找感觉。
+          </Text>
+          <PressableScale
+            style={[styles.seedBtn, { backgroundColor: c.accentSoft }]}
+            onPress={addExamples}
+          >
+            <Text style={[styles.seedBtnText, { color: c.accent }]}>
+              {seeding ? '正在放入…' : '放几条示例进来'}
+            </Text>
+          </PressableScale>
+        </View>
       }
       renderItem={({ item }) => {
         const images = getImages(item);
@@ -95,7 +122,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   reviewBtnText: { fontSize: 16, fontWeight: '600' },
-  empty: { textAlign: 'center', marginTop: 80, lineHeight: 24, fontSize: 15 },
+  emptyWrap: { marginTop: 80, alignItems: 'center', paddingHorizontal: spacing.lg },
+  empty: { textAlign: 'center', lineHeight: 24, fontSize: 15 },
+  emptyHint: { textAlign: 'center', marginTop: spacing.xl, fontSize: 14, lineHeight: 22 },
+  seedBtn: {
+    marginTop: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radius.button,
+    borderCurve: 'continuous',
+  },
+  seedBtnText: { fontSize: 15, fontWeight: '600' },
   card: {
     borderRadius: radius.card,
     borderCurve: 'continuous',

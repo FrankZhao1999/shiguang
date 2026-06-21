@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import {
   SafeAreaProvider,
@@ -38,6 +38,7 @@ import CardDetailScreen from './src/screens/CardDetailScreen';
 import ReviewScreen from './src/screens/ReviewScreen';
 import TimelineScreen from './src/screens/TimelineScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import SeedLibraryScreen from './src/screens/SeedLibraryScreen';
 
 // 各栈共用的普通（小标题）头。不透明、与屏幕同底色——小标题在任何嵌套结构下都稳定渲染。
 function headerOptions(c: Palette): NativeStackNavigationOptions {
@@ -62,15 +63,26 @@ function LibraryStackNav() {
         options={({ navigation }) => ({
           title: '记录库',
           headerRight: () => (
-            <TouchableOpacity
-              onPress={() => {
-                haptic.light();
-                navigation.navigate('AddCard');
-              }}
-              hitSlop={10}
-            >
-              <Ionicons name="add" size={28} color={c.accent} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  haptic.light();
+                  navigation.navigate('SeedLibrary');
+                }}
+                hitSlop={10}
+              >
+                <Ionicons name="bulb-outline" size={24} color={c.accent} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  haptic.light();
+                  navigation.navigate('AddCard');
+                }}
+                hitSlop={10}
+              >
+                <Ionicons name="add" size={28} color={c.accent} />
+              </TouchableOpacity>
+            </View>
           ),
         })}
       />
@@ -186,6 +198,11 @@ function RootNavigator() {
         name="Review"
         component={ReviewScreen}
         options={{ presentation: 'modal', title: '回味' }}
+      />
+      <RootStack.Screen
+        name="SeedLibrary"
+        component={SeedLibraryScreen}
+        options={{ title: '灵感库' }}
       />
     </RootStack.Navigator>
   );

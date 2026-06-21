@@ -100,6 +100,36 @@ export async function addCard(
   );
 }
 
+// —— 示例 / 灵感库 ——
+// 记录「已加入过哪些示例」，避免重复加入。只存示例的 key（见 src/seeds.ts）。
+const ADDED_SEEDS_KEY = 'addedSeeds';
+
+export async function getAddedSeedKeys(): Promise<string[]> {
+  const raw = await getSetting(ADDED_SEEDS_KEY);
+  try {
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+// 批量加入一组示例：自动跳过已加入过的，返回这次实际新增的条数。
+// 既用于「空库一键放示例」，也可用于将来灵感库里的单条加入（传入只含一条的数组）。
+export async function addSeedCards(
+  seeds: { key: string; text: string; tag: string | null }[]
+): Promise<number> {
+  const added = new Set(await getAddedSeedKeys());
+  const todo = seeds.filter((s) => !added.has(s.key));
+  for (const s of todo) {
+    await addCard(s.text, s.tag, []);
+  }
+  if (todo.length) {
+    const merged = [...added, ...todo.map((s) => s.key)];
+    await setSetting(ADDED_SEEDS_KEY, JSON.stringify(merged));
+  }
+  return todo.length;
+}
+
 export async function getAllCards(): Promise<Card[]> {
   const db = await getDb();
   return db.getAllAsync<Card>('SELECT * FROM cards ORDER BY createdAt DESC');
