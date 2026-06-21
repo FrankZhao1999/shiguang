@@ -14,7 +14,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { getDailyTime, setDailyTime, getRandomEnabled, setRandomEnabled } from '../settings';
 import { ensurePermissions } from '../notifications';
-import { exportAsText, exportAsBackupFile } from '../export';
+import { exportAsText, exportAsBackupFile, importBackup } from '../export';
 import { useColors, spacing, radius, useTabBarSpace } from '../theme';
 import { haptic } from '../haptics';
 
@@ -93,6 +93,26 @@ export default function SettingsScreen() {
     }
   }
 
+  async function runImport() {
+    haptic.light();
+    try {
+      const res = await importBackup();
+      if (res.status === 'canceled') return;
+      if (res.status === 'invalid') {
+        Alert.alert('无法恢复', '这个文件似乎不是拾光的备份文件（.json）。');
+        return;
+      }
+      haptic.success();
+      const skipped = res.total - res.added;
+      Alert.alert(
+        '恢复完成',
+        `新增 ${res.added} 条${skipped > 0 ? `，跳过 ${skipped} 条已存在的记录` : ''}。`
+      );
+    } catch {
+      Alert.alert('恢复失败', '请确认备份文件完整后重试。');
+    }
+  }
+
   const timeLabel = `${String(time.getHours()).padStart(2, '0')}:${String(
     time.getMinutes()
   ).padStart(2, '0')}`;
@@ -161,7 +181,14 @@ export default function SettingsScreen() {
         >
           <Text style={[styles.actionTitle, { color: c.label }]}>导出完整备份（.json）</Text>
           <Text style={[styles.hint, { color: c.tertiaryLabel }]}>
-            含全部字段，可「存储到文件」到 iCloud，将来可恢复
+            含全部字段与配图，可「存储到文件」到 iCloud
+          </Text>
+        </TouchableOpacity>
+        <View style={[styles.divider, { backgroundColor: c.separator }]} />
+        <TouchableOpacity style={styles.action} onPress={runImport}>
+          <Text style={[styles.actionTitle, { color: c.label }]}>从备份恢复</Text>
+          <Text style={[styles.hint, { color: c.tertiaryLabel }]}>
+            选择一个 .json 备份文件，导入其中的记录（已存在的会自动跳过）
           </Text>
         </TouchableOpacity>
       </View>

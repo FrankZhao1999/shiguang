@@ -1,9 +1,14 @@
 import { Share } from 'react-native';
 import * as Sharing from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import { Card } from './types';
-import { getAllCards } from './db';
+import { getAllCards, importCards } from './db';
+import { getImages, readImageBase64, writeImageBase64 } from './images';
 import { dayKey, longDate, timeOf } from './date';
+
+const BACKUP_APP = 'lucid-shiguang';
+const BACKUP_VERSION = 2; // v2 起，备份内嵌配图 base64
 
 // 拼成一份好读的文本，按天分组，适合拷进备忘录或存成文件。
 function buildExportText(cards: Card[]): string {
@@ -29,15 +34,6 @@ function buildExportText(cards: Card[]): string {
   return lines.join('\n');
 }
 
-// 完整备份：保留所有字段，将来可原样恢复。
-function buildExportJson(cards: Card[]): string {
-  return JSON.stringify(
-    { app: 'lucid-shiguang', version: 1, exportedAt: Date.now(), cards },
-    null,
-    2
-  );
-}
-
 // 导出为可读文本：走系统分享，可选「备忘录 / 拷贝 / 邮件…」。
 export async function exportAsText(): Promise<void> {
   const cards = await getAllCards();
@@ -45,10 +41,31 @@ export async function exportAsText(): Promise<void> {
   await Share.share({ message: text, title: '拾光 · 我的记录' });
 }
 
+// 完整备份：保留所有字段 + 内嵌配图（base64），将来可原样恢复（含图）。
+async function buildBackupJson(cards: Card[]): Promise<string> {
+  // 收集所有配图文件名，去重后逐张读成 base64 一并打包。
+  const names = new Set<string>();
+  for (const c of cards) for (const n of getImages(c)) names.add(n);
+
+  const images: Record<string, string> = {};
+  for (const name of names) {
+    const b64 = await readImageBase64(name);
+    if (b64) images[name] = b64;
+  }
+
+  return JSON.stringify({
+    app: BACKUP_APP,
+    version: BACKUP_VERSION,
+    exportedAt: Date.now(),
+    cards,
+    images,
+  });
+}
+
 // 导出完整备份文件（.json）：写到缓存目录再走系统分享，可「存储到文件」到 iCloud。
 export async function exportAsBackupFile(): Promise<void> {
   const cards = await getAllCards();
-  const json = buildExportJson(cards);
+  const json = await buildBackupJson(cards);
 
   const stamp = new Date().toISOString().slice(0, 10);
   const file = new File(Paths.cache, `shiguang-backup-${stamp}.json`);
@@ -65,4 +82,46 @@ export async function exportAsBackupFile(): Promise<void> {
     // 极少数不支持系统分享的情况，退回文本分享。
     await Share.share({ message: json, title: '拾光备份' });
   }
+}
+
+export type ImportResult =
+  | { status: 'canceled' }
+  | { status: 'invalid' }
+  | { status: 'ok'; added: number; total: number };
+
+// 从备份恢复：选一个 .json 备份文件，先把配图写回本地，再导入卡片（去重）。
+export async function importBackup(): Promise<ImportResult> {
+  const picked = await DocumentPicker.getDocumentAsync({
+    type: ['application/json', 'public.json', 'public.text'],
+    copyToCacheDirectory: true,
+  });
+  if (picked.canceled || !picked.assets?.length) return { status: 'canceled' };
+
+  let data: any;
+  try {
+    const raw = await new File(picked.assets[0].uri).text();
+    data = JSON.parse(raw);
+  } catch {
+    return { status: 'invalid' };
+  }
+
+  if (data?.app !== BACKUP_APP || !Array.isArray(data.cards)) {
+    return { status: 'invalid' };
+  }
+
+  // 先把内嵌配图写回本地目录（同名已存在则跳过），卡片里的文件名引用即可生效。
+  if (data.images && typeof data.images === 'object') {
+    for (const [name, b64] of Object.entries(data.images)) {
+      if (typeof b64 === 'string') {
+        try {
+          writeImageBase64(name, b64);
+        } catch {
+          // 单张失败不阻断整体恢复
+        }
+      }
+    }
+  }
+
+  const added = await importCards(data.cards as Partial<Card>[]);
+  return { status: 'ok', added, total: data.cards.length };
 }

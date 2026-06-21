@@ -135,6 +135,47 @@ export async function getAllCards(): Promise<Card[]> {
   return db.getAllAsync<Card>('SELECT * FROM cards ORDER BY createdAt DESC');
 }
 
+// 从备份恢复：批量插入卡片，尽量保留原字段（成熟度/重要/回味次数等）。
+// 按 createdAt + text 去重，避免同一份备份重复导入产生副本。返回实际新增条数。
+export async function importCards(cards: Partial<Card>[]): Promise<number> {
+  const db = await getDb();
+  const now = Date.now();
+  let added = 0;
+  for (const card of cards) {
+    const text = (card.text ?? '').toString();
+    if (!text.trim()) continue;
+    const createdAt = Number(card.createdAt) || now;
+    const dup = await db.getFirstAsync<{ id: number }>(
+      'SELECT id FROM cards WHERE createdAt = ? AND text = ? LIMIT 1',
+      createdAt,
+      text
+    );
+    if (dup) continue;
+    await db.runAsync(
+      `INSERT INTO cards
+        (text, tag, imageUri, imageUris, createdAt, updatedAt, important, maturity,
+         reviewCount, lastShownAt, nextEligibleAt, internalized, distilled, audioUri)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      text,
+      card.tag ?? null,
+      card.imageUri ?? null,
+      card.imageUris ?? null,
+      createdAt,
+      card.updatedAt ?? null,
+      card.important ? 1 : 0,
+      Number(card.maturity) || 0,
+      Number(card.reviewCount) || 0,
+      card.lastShownAt ?? null,
+      Number(card.nextEligibleAt) || now,
+      card.internalized ? 1 : 0,
+      card.distilled ?? null,
+      card.audioUri ?? null
+    );
+    added++;
+  }
+  return added;
+}
+
 export async function getCard(id: number): Promise<Card | null> {
   const db = await getDb();
   return db.getFirstAsync<Card>('SELECT * FROM cards WHERE id = ?', id);
