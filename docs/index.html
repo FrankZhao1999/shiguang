@@ -1,63 +1,94 @@
 <!DOCTYPE html>
+<!--
+  ⚠️ 文案待定稿（TODO）：本页所有中文文案均为初稿，等 Frank 后续修改——
+  包括：英雄区标题/副文、理念三段、「从知道走到做到」诗句、功能描述、隐私文案、页脚。
+  视觉（摄影/沉浸版）已定；英雄区背景的 SVG 晨雾场景将来可替换为真实自然照片。
+-->
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>拾光 · Lucid —— 记下让你通透的瞬间</title>
-  <meta name="description" content="拾光是一款以「人生顿悟 / 通透」为主题的离线记录类 App。把顿悟、小确幸随手记下，再让它们在合适的时机回到你眼前。完全离线，数据只在你手机里。" />
+  <title>拾光 · Lucid —— 拾起让你忽然通透的光</title>
+  <meta name="description" content="拾光是一款以「人生顿悟 / 通透」为主题的离线记录类 App。把一闪而过的光留下来，让它们在合适的时机回到你眼前。完全离线，数据只在你手机里。" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="hero">
-    <div class="logo">拾光 · Lucid</div>
-    <h1>记下让你<br />忽然通透的瞬间</h1>
-    <p class="tagline">拾起生活里一闪而过的光——把顿悟、通透、小确幸记下来，再让它们时常回到你眼前，陪你慢慢从「知道」走到「做到」。</p>
+  <!-- 英雄区：摄影 / 沉浸版（晨雾海平线，真照片可替换这一区背景） -->
+  <header class="hero photo">
+    <div class="scene" aria-hidden="true">
+      <svg viewBox="0 0 1440 460" preserveAspectRatio="xMidYMax slice">
+        <!-- 远山·雾中（最浅） -->
+        <path d="M0,300 C220,250 360,278 560,262 C820,242 1000,290 1200,266 C1320,252 1400,272 1440,266 L1440,460 L0,460 Z"
+              fill="#7d8aa0" opacity="0.35" />
+        <!-- 中景山脊 -->
+        <path d="M0,338 C260,300 420,330 660,318 C900,306 1080,348 1280,330 C1360,322 1410,334 1440,330 L1440,460 L0,460 Z"
+              fill="#4f5c78" opacity="0.5" />
+        <!-- 海面（暖光倒影带） -->
+        <rect x="0" y="360" width="1440" height="100" fill="#caa784" opacity="0.28" />
+        <!-- 近景岸线（最深） -->
+        <path d="M0,392 C300,372 520,398 760,388 C1000,378 1180,402 1440,386 L1440,460 L0,460 Z"
+              fill="#22304c" opacity="0.85" />
+      </svg>
+    </div>
+
+    <div class="hero-copy">
+      <h1>拾起那些<br />让你忽然通透的光</h1>
+      <p class="lede">生活里总有一闪而过的顿悟、通透、小确幸。把它们留下来，让它们在合适的时机，重新回到你眼前。</p>
+    </div>
+    <div class="scroll" aria-hidden="true">向下 ↓</div>
   </header>
 
-  <main class="wrap">
+  <main>
     <section>
-      <h2>核心理念</h2>
-      <div class="cards cols-3">
-        <div class="tile">
-          <h3>极速记录</h3>
-          <p>灵感转瞬即逝，一打开就能写，文字 / 语音 / 配图，一屏记完。</p>
-        </div>
-        <div class="tile">
-          <h3>时常唤起</h3>
-          <p>每日定点 + 偶发随机的本地提醒，把旧感悟重新带回眼前。</p>
-        </div>
-        <div class="tile">
-          <h3>服务于内化</h3>
-          <p>成熟度加权的间隔重复：越新、越没内化的，出现得越勤。</p>
+      <div class="wrap center">
+        <div class="eyebrow">为什么是拾光</div>
+        <h2>记录不难，难的是内化</h2>
+        <p class="sub">所以拾光不只是日记本，它把「记下来」和「时常回到眼前」合为一件事。</p>
+        <div class="ideas">
+          <div class="idea"><h3>极速记录</h3><p>灵感转瞬即逝，一打开就能写。文字、语音、配图，一屏记完。</p></div>
+          <div class="idea"><h3>时常唤起</h3><p>每日定点与偶发的轻提醒，把旧日的领悟，悄悄带回此刻。</p></div>
+          <div class="idea"><h3>慢慢内化</h3><p>越新、越没做到的，出现得越勤；越熟悉的，间隔越拉长。</p></div>
         </div>
       </div>
     </section>
 
-    <section>
-      <h2>功能</h2>
-      <ul class="features">
-        <li><b>记一笔</b>　文字 / 设备端语音转文字 / 主题 / 多图，一屏记完。</li>
-        <li><b>拾起一条</b>　算法挑一张卡，用「再体会 / 换一张 / 已做到」给它反馈。</li>
-        <li><b>每日</b>　记录热力图 + 统计 + 按天列表，可补记过去某一天。</li>
-        <li><b>灵感库</b>　一批普适的道理，挑有共鸣的一键放进自己的记录。</li>
-        <li><b>编辑留痕</b>　历史记录随时可改，每次改动前自动存档。</li>
-        <li><b>导出备份</b>　可读文本或完整备份文件，自行保管。</li>
-      </ul>
+    <section class="quote">
+      <div class="wrap">
+        <blockquote>从「知道」，走到「做到」，<br />中间隔着一次次的重逢。</blockquote>
+      </div>
     </section>
 
     <section>
-      <div class="privacy-banner">
-        <p>🔒 完全离线 —— 所有数据只存在你的设备上，不联网、不上传、不需要账号。</p>
+      <div class="wrap">
+        <div class="center">
+          <div class="eyebrow">能做什么</div>
+          <h2>安静，克制，刚好够用</h2>
+        </div>
+        <div class="features">
+          <div class="feature"><div class="name">记一笔</div><div class="desc">文字 / 设备端语音转文字 / 主题 / 多图，一屏记完。</div></div>
+          <div class="feature"><div class="name">拾起一条</div><div class="desc">算法挑一张卡，用「再体会 / 换一张 / 已做到」给它反馈。</div></div>
+          <div class="feature"><div class="name">每日</div><div class="desc">记录热力图与按天回顾，可补记过去的某一天。</div></div>
+          <div class="feature"><div class="name">灵感库</div><div class="desc">一批普适的道理，挑有共鸣的，一键放进自己的记录。</div></div>
+          <div class="feature"><div class="name">备份</div><div class="desc">导出可读文本，或含配图的完整备份，随时可恢复。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tight">
+      <div class="wrap calm">
+        <div class="eyebrow">隐私</div>
+        <h2>只属于你的光</h2>
+        <p>所有文字、配图与记录，只存在你的设备上。不联网、不上传、不需要账号。我们看不到，也不想看到。</p>
       </div>
     </section>
   </main>
 
   <footer>
+    <div class="poem">用代码，拾起那些容易被遗忘的微光。</div>
     <div class="links">
       <a href="privacy.html">隐私政策</a>
       <a href="mailto:yangn526828@gmail.com">联系 / 支持</a>
     </div>
-    <div>用代码拾起那些容易被遗忘的微光。</div>
     <div>© 2026 拾光 · Lucid</div>
   </footer>
 </body>
