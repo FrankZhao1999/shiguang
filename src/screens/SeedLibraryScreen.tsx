@@ -70,17 +70,17 @@ export default function SeedLibraryScreen() {
               <PressableScale
                 style={[
                   styles.addBtn,
-                  { backgroundColor: isAdded ? c.fill : c.accentSoft },
+                  { backgroundColor: isAdded ? c.cardPressed : c.accentSoft },
                 ]}
                 onPress={() => add(item)}
               >
                 <Text
                   style={[
                     styles.addBtnText,
-                    { color: isAdded ? c.tertiaryLabel : c.accent },
+                    { color: isAdded ? c.secondaryLabel : c.accent },
                   ]}
                 >
-                  {isAdded ? '已加入' : '＋ 加入'}
+                  {isAdded ? '✓ 已加入' : '＋ 加入'}
                 </Text>
               </PressableScale>
             </View>

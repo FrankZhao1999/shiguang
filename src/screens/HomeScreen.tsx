@@ -2,10 +2,9 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Image } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { RootNav } from '../navigation';
-import { getAllCards, addSeedCards } from '../db';
+import { getAllCards } from '../db';
 import { getImages, resolveImage } from '../images';
 import { Card } from '../types';
-import { SEEDS } from '../seeds';
 import { useColors, spacing, radius, useTabBarSpace } from '../theme';
 import { shortDate } from '../date';
 import { haptic } from '../haptics';
@@ -16,25 +15,12 @@ export default function HomeScreen() {
   const c = useColors();
   const tabSpace = useTabBarSpace();
   const [cards, setCards] = useState<Card[]>([]);
-  const [seeding, setSeeding] = useState(false);
 
   const load = useCallback(() => {
     getAllCards().then(setCards);
   }, []);
 
   useFocusEffect(load);
-
-  const addExamples = useCallback(async () => {
-    if (seeding) return;
-    setSeeding(true);
-    haptic.light();
-    try {
-      await addSeedCards(SEEDS);
-      load();
-    } finally {
-      setSeeding(false);
-    }
-  }, [seeding, load]);
 
   return (
     <FlatList
@@ -60,15 +46,16 @@ export default function HomeScreen() {
             还没有记录。{'\n'}下次有顿悟、有小确幸的瞬间，{'\n'}点右上角记下来吧。
           </Text>
           <Text style={[styles.emptyHint, { color: c.tertiaryLabel }]}>
-            不知从何写起？先放几条示例进来找找感觉。
+            不知从何写起？去灵感库挑几条有共鸣的放进来。
           </Text>
           <PressableScale
             style={[styles.seedBtn, { backgroundColor: c.accentSoft }]}
-            onPress={addExamples}
+            onPress={() => {
+              haptic.light();
+              navigation.navigate('SeedLibrary');
+            }}
           >
-            <Text style={[styles.seedBtnText, { color: c.accent }]}>
-              {seeding ? '正在放入…' : '放几条示例进来'}
-            </Text>
+            <Text style={[styles.seedBtnText, { color: c.accent }]}>去灵感库挑几条</Text>
           </PressableScale>
         </View>
       }
